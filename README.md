@@ -56,6 +56,41 @@ kubectl delete -f k8s-specifications/
 * A [Postgres](https://hub.docker.com/_/postgres/) database backed by a Docker volume
 * A [Node.js](/result) web app which shows the results of the voting in real time
 
+## CI – building and pushing images
+
+The repository includes a GitHub Actions workflow (`.github/workflows/docker-build-push.yml`) that builds all four service images and pushes them to the GitHub Container Registry (GHCR) on every push to `main`.
+
+### How authentication works
+
+The workflow authenticates to GHCR using the **`GITHUB_TOKEN`** that GitHub Actions provisions automatically for every workflow run — no manually-created secret is required.
+
+The token is exposed as an environment variable in the workflow:
+
+```yaml
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+```
+
+### One-time repository setting
+
+For the token to have permission to write to GHCR, you must enable **Read and write permissions** for workflow tokens in the repository settings:
+
+1. Open the repository on GitHub and go to **Settings → Actions → General**.
+2. Scroll to the **Workflow permissions** section.
+3. Select **Read and write permissions**.
+4. Click **Save**.
+
+That is the only setup step required. Once this setting is saved, any push to `main` will build and push the following images to `ghcr.io/<owner>/example-voting-app-<service>`:
+
+| Service | Image |
+|---------|-------|
+| vote | `ghcr.io/<owner>/example-voting-app-vote` |
+| result | `ghcr.io/<owner>/example-voting-app-result` |
+| worker | `ghcr.io/<owner>/example-voting-app-worker` |
+| seed-data | `ghcr.io/<owner>/example-voting-app-seed-data` |
+
+Pull requests against `main` trigger a build-only run (no push) so you can verify images build correctly before merging.
+
 ## Notes
 
 The voting application only accepts one vote per client browser. It does not register additional votes if a vote has already been submitted from a client.
